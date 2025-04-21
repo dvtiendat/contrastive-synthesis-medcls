@@ -39,7 +39,7 @@ The ultimate goal is to improve the classification performance on a lung radiolo
 
 ```
 git clone https://github.com/dvtiendat/contrastive-synthesis-medcls.git
-cd contrastive-synthesis-medcls # Or your chosen repo name
+cd contrastive-synthesis-medcls 
 ```
 
 **2. Create and activate conda environment**
