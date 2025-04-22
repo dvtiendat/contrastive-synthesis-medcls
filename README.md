@@ -44,7 +44,7 @@ cd contrastive-synthesis-medcls
 
 **2. Create and activate conda environment**
 ```
-conda env create -f environment.yml
+conda env create -f environment.yaml
 conda activate medcls
 ```
 
