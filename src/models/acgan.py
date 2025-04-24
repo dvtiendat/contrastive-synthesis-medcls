@@ -66,7 +66,7 @@ class Generator(nn.Module):
 
     def sample_images(self, label, save_dir, num_samples = 1000, batch_size = 20, device = "cpu"):
         assert label in self.lookup_label.keys(), f"Label must be of the following: {list(self.lookup_label.keys())}"
-        save_folder = os.path.join(save_dir, label)
+        save_folder = os.path.join(save_dir, "ACGAN", label)
         os.makedirs(save_folder, exist_ok=True)
         with torch.no_grad():
             for steps in tqdm.tqdm(range(num_samples // batch_size)):
@@ -131,12 +131,11 @@ def gray_to_rgb_ndarray(img: np.ndarray) -> np.ndarray:
         return img  # Already 3 channels
 
 def get_model(configs):
-    # Unpack values from configs dictionary
-    LATENT_DIM = configs.get('LATENT_DIM', 128)  # Default value is 128 if not provided
-    IMG_SIZE = configs.get('IMG_SIZE', 224)  # Default value is 224 if not provided
-    NUM_CLASSES = configs.get('NUM_CLASSES', 4)  # Default value is 4 if not provided
-    OUT_CHANNELS = configs.get('OUT_CHANNELS', 1)  # Default value is 1 if not provided
-    CHECKPOINT_PATH = configs.get('CHECKPOINT_PATH', 'ckpts/ACGAN_Checkpoint_Deeper_1500.pt')  # Checkpoint path if provided
+    LATENT_DIM = configs.get('LATENT_DIM', 128) 
+    IMG_SIZE = configs.get('IMG_SIZE', 224) 
+    NUM_CLASSES = configs.get('NUM_CLASSES', 4) 
+    OUT_CHANNELS = configs.get('OUT_CHANNELS', 1)
+    CHECKPOINT_PATH = configs.get('CHECKPOINT_PATH', 'ckpts/ACGAN_Checkpoint.pt') 
     LOOKUP_LABEL = configs.get('LOOKUP_LABEL', {
         "COVID": 0,
         "Lung_Opacity": 1,
@@ -151,8 +150,8 @@ def get_model(configs):
     D = Discriminator(NUM_CLASSES, IMG_SIZE, OUT_CHANNELS)
     if CHECKPOINT_PATH:
         ckpt = torch.load(CHECKPOINT_PATH, map_location="cpu")
-        G.load_state_dict(ckpt['generator_state_dict'])
-        D.load_state_dict(ckpt['discriminator_state_dict'])
+        G.load_state_dict(ckpt)
+        # D.load_state_dict(ckpt['discriminator_state_dict'])
         print(f"Checkpoint loaded from {CHECKPOINT_PATH}")
         
     return G, D
