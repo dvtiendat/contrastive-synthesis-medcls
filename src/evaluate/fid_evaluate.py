@@ -1,7 +1,11 @@
 import os
 import argparse
 from pytorch_fid import fid_score
-from src.models import acgan
+from src.models import (
+    acgan,
+    dcgan
+)
+LABEL = ['COVID', 'Lung_Opacity', 'Normal', 'Viral_Pneumonia']
 def compute_fid(real_images_path: str, generated_images_path: str, device='cuda'):
     """
     Compute the Fréchet Inception Distance (FID) between two sets of images.
@@ -18,7 +22,7 @@ def compute_fid(real_images_path: str, generated_images_path: str, device='cuda'
     # Calculate FID using pytorch-fid
     fid_value = fid_score.calculate_fid_given_paths(
         [real_images_path, generated_images_path], 
-        batch_size=50,  # Adjust batch size if needed
+        batch_size=10,  # Adjust batch size if needed
         device=device, 
         dims=768
     )
@@ -29,14 +33,16 @@ def import_model(model_name):
     Dynamically import model based on model name.
     """
     if model_name == "ACGAN":
-        G, D, INV_LOOKUP = acgan.get_model({})
+        G, D = acgan.get_model({})
     elif model_name == "DCGAN":
         # If you have a DCGAN model, you can import it in a similar way
-        G, D, INV_LOOKUP = acgan.get_model({})
+        G, D = dcgan.get_model({})
     else:
         raise ValueError(f"Model {model_name} is not supported.")
     
-    return G, D, INV_LOOKUP
+    return G, D
+def run():
+    pass
 def parse_args():
     parser = argparse.ArgumentParser(description="Compute FID score")
     parser.add_argument(
@@ -53,19 +59,14 @@ def parse_args():
         default=2048, 
         help="Dimensionality for FID calculation (92, 768, or 2048). Default is 2048."
     )
-    parser.add_argument(
-        '--generated_images_path', 
-        type=str, 
-        default="gen_images", 
-        help="Directory path for generated images. Default is 'gen_images'."
-    )
-    parser.add_argument(
-        '--real_images_path', 
-        type=str, 
-        default="covid-data-1k", 
-        help="Directory path for real images. Default is 'covid-data-1k'."
-    )
 
     return parser.parse_args()
 if __name__ == "__main__":
-    args = parse_args()
+    # args = parse_args()
+    model_name = "ACGAN"
+    G, D = import_model(model_name)
+    for label in LABEL:
+        G.sample_images(label, 'images/gen_images', 100, 5)
+        real_img_paths = f'images/real_images/{label}'
+        gen_img_paths = f'images/gen_images/{model_name}/{label}'
+        fid_score = compute_fid(real_img_paths, gen_img_paths, device = "cpu")
