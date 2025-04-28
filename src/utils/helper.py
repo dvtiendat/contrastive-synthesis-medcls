@@ -1,7 +1,16 @@
+import os
 import torch 
 import random
 import numpy as np
 
+def get_path():
+    """Return the absolute path (root path) of the repository
+    
+    """
+    current_file_path = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_file_path, '..', '..'))
+    
+    return project_root
 def set_seed(seed=42):
     """Set random seed for reproducibility across numpy, random, and torch.
 
