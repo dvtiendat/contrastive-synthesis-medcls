@@ -92,7 +92,7 @@ def run_is_evaluate(model_name, device = "cpu", path = get_path()):
         gen_img_paths = os.path.join(path, f'images/gen_images/{model_name}/{label}')
         print(gen_img_paths)
         if not os.path.exists(gen_img_paths) or len(os.listdir(gen_img_paths)) != 1000:
-            G.sample_images(label, os.path.join(path, 'images/gen_images'), 1000, 25)
+            G.sample_images(label, os.path.join(path, 'images/gen_images'), 1000, 25, device = device)
         is_score = inception_score(gen_img_paths, device=device)
         print(f"Inception Score statistics for {model_name} on label {label}: {is_score[0]}")
 def import_model(model_name: str):
