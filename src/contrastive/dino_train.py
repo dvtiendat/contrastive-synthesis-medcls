@@ -1,8 +1,8 @@
 import torch
 import time
 import numpy as np
-import wandb # Import W&B
-from .utils import clip_gradients, cancel_gradients_last_layer # Assuming utils.py is in the same dir
+import wandb 
+from .utils import clip_gradients, cancel_gradients_last_layer 
 
 def train_dino_epoch(student, teacher, dino_loss, data_loader,
                      optimizer, lr_schedule, wd_schedule, momentum_schedule,
@@ -16,7 +16,6 @@ def train_dino_epoch(student, teacher, dino_loss, data_loader,
 
     # Use niter_per_ep for scheduler indexing
     niter_per_ep = len(data_loader)
-    print(niter_per_ep)
 
     for it, (images, _) in enumerate(data_loader):
         # Calculate global iteration number
