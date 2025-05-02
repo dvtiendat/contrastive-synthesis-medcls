@@ -19,7 +19,7 @@ from src.models import (
     dcgan
 )
 LABEL = ['COVID', 'Lung_Opacity', 'Normal', 'Viral_Pneumonia']
-def inception_score(gen_img_paths, cuda=True, batch_size=32, resize=True, splits=1):
+def inception_score(gen_img_paths, device = "cpu", batch_size=32, resize=True, splits=1):
     """Computes the inception score of the generated images imgs
 
     imgs -- Torch dataset of (3xHxW) numpy images normalized in the range [-1, 1]
@@ -47,21 +47,13 @@ def inception_score(gen_img_paths, cuda=True, batch_size=32, resize=True, splits
     assert batch_size > 0
     assert N > batch_size
 
-    # Set up dtype
-    if cuda:
-        dtype = torch.cuda.FloatTensor
-    else:
-        if torch.cuda.is_available():
-            print("WARNING: You have a CUDA device, so you should probably set cuda=True")
-        dtype = torch.FloatTensor
-
     # Set up dataloader
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
 
     # Load inception model
-    inception_model = inception_v3(pretrained=True, transform_input=False).type(dtype)
+    inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
     inception_model.eval()
-    up = nn.Upsample(size=(299, 299), mode='bilinear').type(dtype)
+    up = nn.Upsample(size=(299, 299), mode='bilinear').to(device)
     def get_pred(x):
         if resize:
             x = up(x)
@@ -72,11 +64,11 @@ def inception_score(gen_img_paths, cuda=True, batch_size=32, resize=True, splits
     preds = np.zeros((N, 1000))
 
     for i, batch in enumerate(dataloader, 0):
-        batch = batch.type(dtype)
+        batch = batch.to(device)
         batchv = Variable(batch)
         batch_size_i = batch.size()[0]
-
-        preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
+        with torch.no_grad():
+            preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
 
     # Now compute the mean kl-div
     split_scores = []
@@ -93,7 +85,7 @@ def inception_score(gen_img_paths, cuda=True, batch_size=32, resize=True, splits
     return np.mean(split_scores), np.std(split_scores)
 
 # Example usage
-def run_is_evaluate(model_name, path = get_path()):
+def run_is_evaluate(model_name, device = "cpu", path = get_path()):
     G, D = import_model(model_name)
     abs_path = get_path()
     for label in LABEL:
@@ -101,8 +93,8 @@ def run_is_evaluate(model_name, path = get_path()):
         print(gen_img_paths)
         if not os.path.exists(gen_img_paths) or len(os.listdir(gen_img_paths)) != 1000:
             G.sample_images(label, os.path.join(path, 'images/gen_images'), 1000, 25)
-        is_score = inception_score(gen_img_paths, cuda = False)
-        print(f"Inception Score statistics for {model_name} on label {label}: {is_score}")
+        is_score = inception_score(gen_img_paths, device=device)
+        print(f"Inception Score statistics for {model_name} on label {label}: {is_score[0]}")
 def import_model(model_name: str):
     """
     Dynamically import model based on model name.
@@ -123,7 +115,14 @@ def parse_args():
         default="ACGAN", 
         help="The model type ('ACGAN' or 'DCGAN'). Default to 'ACGAN'."
     )
+    parser.add_argument(
+        '--device',
+        type=str,
+        choices=["cpu", "cuda"],
+        default="cuda" if torch.cuda.is_available() else "cpu",
+        help="Device to run the evaluation on ('cuda' or 'cpu'). Default: auto-select based on availability."
+    )
     return parser.parse_args()
 if __name__ == "__main__":
     args = parse_args()
-    run_is_evaluate(args.model_name)
+    run_is_evaluate(args.model_name, args.device)
