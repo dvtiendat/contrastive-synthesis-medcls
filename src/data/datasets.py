@@ -1,12 +1,19 @@
-# src/data/datasets.py
 import os
-from PIL import Image
+import cv2
 import torch
 from torch.utils.data import Dataset
-import cv2 # If using albumentations for classification dataset
+from PIL import Image
 
-class DINOUnlabeledDataset(Dataset):
-    """Dataset for unlabeled images used in self-supervised pretraining."""
+def collate_fn(batch):
+    """Custom collate function to filter out None samples"""
+    batch = [sample for sample in batch if sample[0] is not None and sample[1] is not None]
+    if len(batch) == 0:
+        return None, None
+    return torch.utils.data.dataloader.default_collate(batch)
+
+
+class UnlabeledDataset(Dataset):
+    """Dataset for unlabeled images used in DINO pretraining."""
     def __init__(self, root_dir, transform=None):
         self.root_dir = root_dir
         self.transform = transform
@@ -25,42 +32,49 @@ class DINOUnlabeledDataset(Dataset):
         try:
             image = Image.open(img_path).convert('RGB')
         except Exception as e:
-            print(f"Error loading image {img_path}: {e}")
-            return None 
+            print(f"Warning: Could not load image {img_path}. Error: {e}")
+            return None, 0 # Important: return None for both image and dummy label
+
         if self.transform:
-            crops = self.transform(image)
-            return crops 
+            try:
+                crops = self.transform(image)
+                # Ensure transform returns a list of tensors
+                if not isinstance(crops, list) or not all(isinstance(c, torch.Tensor) for c in crops):
+                     raise ValueError("Transform did not return a list of tensors")
+                return crops, 0 # Return dummy label 0 for unlabeled data
+            except Exception as e:
+                print(f"Warning: Failed to transform image {img_path}. Error: {e}")
+                return None, 0
+        else:
+             # Handle case where no transform is provided if necessary
+             # Maybe convert PIL image to tensor?
+             return image, 0 # Return PIL image and dummy label
 
-        return image, 0
 
-class ClassificationDataset(Dataset):
-    """Dataset for labeled image classification (used for fine-tuning)."""
-    def __init__(self, root_dir, classes, transform=None):
+class Classification_dataset(Dataset):
+    """Dataset for labeled classification task."""
+    def __init__(self, root_dir, transform=None, classes=None):
         self.root_dir = root_dir
         self.transform = transform
-        self.classes = classes
+        self.classes = classes if classes else ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal']
         self.data = []
         self.class_to_id = {clazz: i for i, clazz in enumerate(self.classes)}
 
         for clazz in self.classes:
             class_dir = os.path.join(root_dir, clazz)
-            if not os.path.isdir(class_dir):
-                print(f"Warning: Class directory not found: {class_dir}")
-                continue
-
-            # Assuming images are directly inside class directories
-            # Adjust if structure is different (e.g., has 'images' subfolder)
-            img_dir = class_dir #os.path.join(class_dir, 'images') # Adjust if needed
-
+            img_dir = os.path.join(class_dir, 'images')
             if not os.path.isdir(img_dir):
-                 print(f"Warning: Image directory not found: {img_dir}")
-                 continue
+                img_dir = class_dir 
 
-            class_id = self.class_to_id[clazz]
-            for img_file in os.listdir(img_dir):
-                 if img_file.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    img_path = os.path.join(img_dir, img_file)
-                    self.data.append((img_path, class_id))
+            if os.path.isdir(img_dir):
+                class_id = self.class_to_id[clazz]
+                for img_name in os.listdir(img_dir):
+                    if img_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        img_path = os.path.join(img_dir, img_name)
+                        self.data.append((img_path, class_id))
+            else:
+                print(f"Warning: Directory not found for class {clazz}: {img_dir}")
+
 
     def __len__(self):
         return len(self.data)
@@ -68,62 +82,23 @@ class ClassificationDataset(Dataset):
     def __getitem__(self, idx):
         img_path, label = self.data[idx]
         try:
-            # Use PIL for torchvision transforms, cv2 for albumentations
-            if self.transform and 'albumentations' in str(type(self.transform)):
-                 img = cv2.imread(img_path)
-                 if img is None:
-                     raise ValueError(f"cv2 failed to load image: {img_path}")
-                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            else:
-                 img = Image.open(img_path).convert('RGB')
-
+            img = cv2.imread(img_path)
+            if img is None:
+                print(f"Warning: Failed to read image {img_path}")
+                raise ValueError(f"Failed to read image {img_path}")
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         except Exception as e:
             print(f"Error loading image {img_path}: {e}")
-            return None, None # Signal error to collate_fn
+            return None, None 
 
         if self.transform:
-            if 'albumentations' in str(type(self.transform)):
-                 transformed = self.transform(image=img)
-                 img_tensor = transformed['image']
-            else:
-                 img_tensor = self.transform(img)
-
-            # Basic check after transform
-            if not isinstance(img_tensor, torch.Tensor):
-                 print(f"Warning: Transform did not return a tensor for {img_path}")
-                 return None, None
-
-            return img_tensor, label
+            try:
+                transformed = self.transform(image=img)
+                img = transformed['image']
+                if not isinstance(img, torch.Tensor):
+                    raise ValueError("Transform did not return a tensor")
+            except Exception as e:
+                print(f"Error transforming image {img_path}: {e}")
+                return None, None
 
         return img, label
-
-def build_dino_dataset(data_path, global_crops_scale, local_crops_scale,
-                       local_crops_number, global_size, local_size):
-    """Helper function to build DINO dataset."""
-    transform = DataAugmentationDINO(
-        global_crops_scale, local_crops_scale, local_crops_number,
-        global_size, local_size
-    )
-    dataset = UnlabeledDataset(data_path, transform=transform)
-    print(f"Built DINO dataset with {len(dataset)} images from {data_path}.")
-    return dataset
-
-def collate_fn_filter_none(batch):
-    """Collate function that filters out None samples."""
-    batch = [sample for sample in batch if sample[0] is not None and sample[1] is not None]
-    if len(batch) == 0:
-        return None
-    return torch.utils.data.dataloader.default_collate(batch)
-
-def collate_fn_dino(batch):
-    """Collate function for DINO that handles lists of crops and filters None."""
-    batch = [sample for sample in batch if sample is not None and sample[0] is not None]
-    if len(batch) == 0:
-        return None
-
-    num_crops = len(batch[0]) 
-    collated_crops = []
-    for i in range(num_crops):
-        collated_crops.append(torch.stack([sample[i] for sample in batch]))
-
-    return collated_crops 
