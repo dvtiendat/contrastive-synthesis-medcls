@@ -73,11 +73,8 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, scaler=None, device=
 
 def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='cuda'):
     """Loads DINO teacher weights for the backbone specifically."""
-    if not os.path.isfile(checkpoint_path):
-        raise FileNotFoundError(f"=> No checkpoint found at '{checkpoint_path}'")
-
     print(f"Loading DINO checkpoint for finetuning from '{checkpoint_path}'")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
 
     # DINO saves student and teacher, usually finetune from teacher
     if 'teacher' not in checkpoint:

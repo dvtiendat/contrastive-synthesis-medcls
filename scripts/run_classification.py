@@ -23,16 +23,23 @@ from src.utils.helper import set_seed
 from src.data.datasets import Classification_dataset, collate_fn
 from src.data.transforms import get_train_transform, get_val_transform
 from src.models.vit import vit_small 
-from src.models.classification_head import FinetuneViT
+from src.models.vit_cls_head import FinetuneViT
 from src.classification.train_eval import train_step, val_step
-from src.utils.checkpoint_utils import save_checkpoint, load_checkpoint, load_dino_checkpoint_for_finetune, save_stats
-from src.utils.logging_utils import setup_logging
+from src.utils.helper import save_checkpoint, load_checkpoint, load_dino_checkpoint_for_finetune, save_stats
+from src.utils.logging import setup_logging
 import logging
 
 def parse_args():
     parser = argparse.ArgumentParser(description='ViT Finetuning Script')
     parser.add_argument('--config', type=str, required=True, help='Path to the config YAML file')
-    # Add overrides if needed
+    parser.add_argument('--data_path', type=str, default=None, help='Override data path for labeled data')
+    parser.add_argument('--output_dir', type=str, default=None, help='Override output directory')
+    parser.add_argument('--pretrained_checkpoint_path', type=str, default=None, help='Override path to pretrained DINO checkpoint')
+    parser.add_argument('--batch_size', type=int, default=None, help='Override batch size')
+    parser.add_argument('--learning_rate', type=float, default=None, help='Override learning rate')
+    parser.add_argument('--epochs', type=int, default=None, help='Override number of epochs')
+    parser.add_argument('--freeze_backbone', type=bool, default=None, help='Override whether to freeze backbone')
+    
     return parser.parse_args()
 
 def plot_confusion_matrix(cm, classes, filename):
@@ -53,6 +60,23 @@ def main():
     # --- Load Configuration ---
     with open(args.config, 'r') as f:
         cfg = yaml.safe_load(f)
+    
+    # Override config values with command line arguments if provided
+    if args.data_path is not None:
+        cfg['data_path'] = args.data_path
+    if args.output_dir is not None:
+        cfg['output_dir'] = args.output_dir
+    if args.pretrained_checkpoint_path is not None:
+        cfg['pretrained_checkpoint_path'] = args.pretrained_checkpoint_path
+    if args.batch_size is not None:
+        cfg['batch_size'] = args.batch_size
+    if args.learning_rate is not None:
+        cfg['learning_rate'] = args.learning_rate
+    if args.epochs is not None:
+        cfg['epochs'] = args.epochs
+    if args.freeze_backbone is not None:
+        cfg['freeze_backbone'] = args.freeze_backbone
+    
     print("--- Configuration ---")
     print(yaml.dump(cfg, indent=4))
     print("---------------------")
@@ -99,7 +123,7 @@ def main():
 
     train_dataset = Subset(dataset_full_train, train_indices)
     val_dataset = Subset(dataset_full_val, val_indices)
-    test_dataset = Subset(dataset_full_val, test_indices) # Use test_loader later for final eval
+    test_dataset = Subset(dataset_full_val, test_indices) 
 
     train_loader = DataLoader(train_dataset, batch_size=cfg['batch_size'], shuffle=True,
                               num_workers=cfg['num_workers'], pin_memory=True, collate_fn=collate_fn)
