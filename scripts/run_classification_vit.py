@@ -148,11 +148,11 @@ def main():
         except Exception as e:
              logging.error(f"Failed to load DINO checkpoint: {e}.")
              # Optionally load ImageNet weights here if DINO fails and specified
-             # backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
+             backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
     else:
         logging.warning("No pretrained_checkpoint_path specified.")
         # Or load ImageNet weights by default if desired
-        # backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
+        backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
 
 
     model = FinetuneViT(backbone, num_classes=cfg['num_classes'], freeze_backbone=cfg['freeze_backbone'])
