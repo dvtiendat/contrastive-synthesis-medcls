@@ -177,7 +177,7 @@ def main():
     epochs_no_improve = 0
 
     for epoch in range(start_epoch, cfg['epochs']):
-        cfg['current_epoch'] = epoch # Add epoch to config for logging inside steps
+        cfg['current_epoch'] = epoch 
         epoch_start_time = time.time()
 
         train_metrics = train_step(model, train_loader, criterion, optimizer, device, cfg['num_classes'], cfg)
