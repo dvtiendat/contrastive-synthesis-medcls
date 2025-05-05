@@ -1,4 +1,3 @@
-# Data Parameters
 data_path: "" 
 output_dir: ""          
 num_workers: 4
@@ -13,7 +12,7 @@ patch_size: 16
 embed_dim: 384 
 num_heads: 3   
 pretrained_checkpoint_path: "ckpts/best_model.pth" # Path to our DINO checkpoint
-freeze_backbone: False # Set to True for linear probing initially, False for full finetuning
+freeze_backbone: 'False' # Set to True for linear probing initially, False for full finetuning
 
 # Training Hyperparameters
 epochs: 50
@@ -23,9 +22,8 @@ weight_decay: 0.01
 use_fp16: True 
 
 seed: 42
-early_stop_patience: 10 # From notebook
+early_stop_patience: 10 
 
-# W&B Parameters
 wandb_project: "lung_radiology_classification"
 wandb_entity: "dvtiendat"
 wandb_run_name: "finetune_vit_dino"

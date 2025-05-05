@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import os
 from pathlib import Path
+import json 
 
 def get_path():
     """Return the absolute path (root path) of the repository
@@ -88,7 +89,6 @@ def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='c
         print(f"=> Loading with weights_only=False failed: {e_false}")
         try:
             # Fallback to weights_only=True if False failed unexpectedly
-            # (This might fail again if non-tensor data is present)
             print("=> Attempting to load with weights_only=True...")
             checkpoint = torch.load(abs_path, map_location=device, weights_only=True)
             print("=> Checkpoint loaded successfully (weights_only=True).")

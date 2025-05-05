@@ -85,7 +85,7 @@ def get_train_transform(img_size=224):
         # A.RandomRotate90(p=0.3),
         # A.HorizontalFlip(p=0.3),
         A.GaussianBlur(blur_limit=(3, 3), p=0.2),
-        A.CLAHE(clip_limit=3.0, tile_grid_size=(8, 8), p=0.3),
+        A.CLAHE(clip_limit=3.0, tile_grid_size=(8, 8)),
         A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ToTensorV2(),
     ])

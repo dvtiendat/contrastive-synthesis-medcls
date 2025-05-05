@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=None, help='Override batch size')
     parser.add_argument('--learning_rate', type=float, default=None, help='Override learning rate')
     parser.add_argument('--epochs', type=int, default=None, help='Override number of epochs')
-    parser.add_argument('--freeze_backbone', type=bool, default=None, help='Override whether to freeze backbone')
+    parser.add_argument('--freeze_backbone', type=str, choices=['True', 'False'], default=None, help='Override whether to freeze backbone')
     
     return parser.parse_args()
 
@@ -56,7 +56,7 @@ def plot_confusion_matrix(cm, classes, filename):
 
 def main():
     args = parse_args()
-
+    # print(args.freeze_backbone)
     # --- Load Configuration ---
     with open(args.config, 'r') as f:
         cfg = yaml.safe_load(f)
@@ -79,7 +79,7 @@ def main():
     
     print("--- Configuration ---")
     print(yaml.dump(cfg, indent=4))
-    print(cfg['freeze_backbone'])
+    # print(cfg['freeze_backbone'])
     print("---------------------")
 
     # --- Setup ---
