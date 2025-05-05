@@ -17,7 +17,7 @@ freeze_backbone: False # Set to True for linear probing initially, False for ful
 
 # Training Hyperparameters
 epochs: 50
-batch_size: 1
+batch_size: 32
 learning_rate: 0.0001
 weight_decay: 0.01
 use_fp16: True 

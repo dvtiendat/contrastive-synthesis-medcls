@@ -79,6 +79,7 @@ def main():
     
     print("--- Configuration ---")
     print(yaml.dump(cfg, indent=4))
+    print(cfg['freeze_backbone'])
     print("---------------------")
 
     # --- Setup ---
