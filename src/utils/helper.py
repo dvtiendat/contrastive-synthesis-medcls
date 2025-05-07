@@ -87,6 +87,13 @@ def _no_grad_trunc_normal_(tensor, mean, std, a, b):
 def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     return _no_grad_trunc_normal_(tensor, mean, std, a, b)
 
+def save_checkpoint(model, optimizer, epoch, path):
+    torch.save({
+        'model_state': model.state_dict(),
+        'optimizer_state': optimizer.state_dict(),
+        'epoch': epoch
+    }, path)
+
 if __name__ == "__main__":
     set_seed(42)
 

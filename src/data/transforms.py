@@ -2,6 +2,7 @@ import random
 from PIL import Image, ImageFilter, ImageOps
 import torchvision.transforms as transforms
 import torch
+from torchvision.transforms import GaussianBlur, ColorJitter, RandomResizedCrop, RandomGrayscale, RandomHorizontalFlip, Compose, ToTensor
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 
@@ -103,3 +104,13 @@ def get_classification_transforms(img_size=224):
         ToTensorV2(),
     ])
     return train_transform, val_transform
+
+def get_simclr_augmentation():
+    return Compose([
+        RandomResizedCrop(224),
+        RandomHorizontalFlip(),
+        ColorJitter(0.8, 0.8, 0.8, 0.2),
+        RandomGrayscale(p=0.2),
+        GaussianBlur(kernel_size=9),
+        ToTensor()
+    ])

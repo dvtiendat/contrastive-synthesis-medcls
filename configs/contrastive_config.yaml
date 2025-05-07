@@ -1,0 +1,11 @@
+dataset_dir: "data/images"
+image_size: 224
+batch_size: 64
+learning_rate: 0.001
+weight_decay: 1e-4
+temperature: 0.5
+epochs: 100
+device: "cuda"
+out_dim: 128
+num_workers: 4
+model_save_path: "saved_models/simclr_backbone.pth"
