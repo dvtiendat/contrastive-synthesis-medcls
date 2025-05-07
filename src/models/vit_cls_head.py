@@ -16,7 +16,7 @@ class FinetuneViT(nn.Module):
         self.embed_dim = backbone.embed_dim
         self.head = nn.Linear(self.embed_dim, num_classes)
 
-        if freeze_backbone:
+        if freeze_backbone == 'True':
             print("Freezing backbone parameters.")
             for param in self.backbone.parameters():
                 param.requires_grad = False
