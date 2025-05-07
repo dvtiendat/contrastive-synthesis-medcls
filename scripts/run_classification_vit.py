@@ -11,7 +11,6 @@ import torch.optim
 import torch.utils.data
 from torch.utils.data import DataLoader, Subset
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from torch.cuda.amp import GradScaler
 import wandb 
 from pathlib import Path
 from functools import partial
@@ -169,11 +168,6 @@ def main():
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True) 
     logging.info(f"Optimizer AdamW and ReduceLROnPlateau scheduler created. LR: {cfg['learning_rate']:.6f}")
 
-    scaler = None
-    if cfg.get('use_fp16', False): # Check the effective config
-        scaler = GradScaler()
-        logging.info("Using FP16 training for fine-tuning.")
-
     start_epoch = 0
     best_val_loss = float('inf')
 
@@ -187,7 +181,7 @@ def main():
         cfg['current_epoch'] = epoch 
         epoch_start_time = time.time()
 
-        train_metrics = train_step(model, train_loader, criterion, optimizer, device, cfg['num_classes'], cfg, scaler)
+        train_metrics = train_step(model, train_loader, criterion, optimizer, device, cfg['num_classes'], cfg)
         val_metrics = val_step(model, val_loader, criterion, device, cfg['num_classes'], cfg)
 
         scheduler.step(val_metrics['loss'])
@@ -222,9 +216,6 @@ def main():
                  'f1_macro': val_metrics['f1_macro'],
                  'config': cfg
              }
-
-             if cfg.get('use_fp16', False) and scaler is not None:
-                save_dict['scaler_state_dict'] = scaler.state_dict()
              save_checkpoint(save_dict, is_best, str(output_dir), best_filename='best_finetune_model.pth')
         else:
              epochs_no_improve += 1
@@ -242,8 +233,6 @@ def main():
         'final_f1_macro': val_metrics['f1_macro'],
         'config': cfg
     }
-    if cfg.get('use_fp16', False) and scaler is not None:
-        final_save_dict['scaler_state_dict'] = scaler.state_dict()
     save_checkpoint(final_save_dict, False, str(output_dir), filename='last_finetune_model.pth')
 
     cm_filename = output_dir / f"confusion_matrix_epoch_{epoch+1}.png"
