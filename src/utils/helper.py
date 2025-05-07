@@ -83,17 +83,17 @@ def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='c
     try:
         # Try loading with weights_only=False first, as it worked in notebook
         # and might be necessary if non-tensor data is pickled
-        checkpoint = torch.load(abs_path, map_location=device, weights_only=False)
-        print("=> Checkpoint loaded successfully (weights_only=False).")
+        checkpoint = torch.load(abs_path, map_location=device, weights_only=True)
+        print("=> Checkpoint loaded successfully (weights_only=True).")
     except Exception as e_false:
         print(f"=> Loading with weights_only=False failed: {e_false}")
         try:
             # Fallback to weights_only=True if False failed unexpectedly
-            print("=> Attempting to load with weights_only=True...")
-            checkpoint = torch.load(abs_path, map_location=device, weights_only=True)
+            print("=> Attempting to load with weights_only=False...")
+            checkpoint = torch.load(abs_path, map_location=device, weights_only=False)
             print("=> Checkpoint loaded successfully (weights_only=True).")
         except Exception as e_true:
-            print(f"=> Loading with weights_only=True also failed: {e_true}")
+            print(f"=> Loading with weights_only=False also failed: {e_true}")
             print("=> ERROR: Could not load the checkpoint file.")
             raise e_true # Re-raise the error
 
@@ -127,7 +127,7 @@ def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='c
             # print(f"Mapping: '{key}' -> '{new_key}'") # Uncomment for very detailed debug
         else:
             skipped_count +=1
-            # print(f"Skipping non-backbone key: {key}") # Uncomment for very detailed debug
+            print(f"Skipping non-backbone key: {key}") # Uncomment for very detailed debug
 
     if loaded_count == 0:
          print("\nERROR: No weights with 'backbone.' prefix found in the selected state_dict.")

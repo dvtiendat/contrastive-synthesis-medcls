@@ -158,6 +158,7 @@ def main():
 
     model = FinetuneViT(backbone, num_classes=cfg['num_classes'], freeze_backbone=cfg['freeze_backbone'])
     model.to(device)
+    print(f"Model architecture: {model}")
     if cfg.get('use_wandb', True):
         wandb.watch(model, log_freq=100)
 
