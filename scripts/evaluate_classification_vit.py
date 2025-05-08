@@ -140,8 +140,9 @@ def main():
     # --- Report Results ---
     logging.info("\n--- Test Set Results ---")
     print(f"Accuracy: {test_metrics['accuracy']:.4f}%")
-    print(f"Recall: {test_metrics['recall']:.4f}")
-    print(f"Precision: {test_metrics['precision']:.4f}")
+    print(f"Recall: {test_metrics['recall_per_class']:.4f}")
+    print(f"Precision: {test_metrics['precision_per_class']:.4f}")
+    print(f"Precision: {test_metrics['per_class_acc']:.4f}")
     print(f"F1 Score (Macro): {test_metrics['f1_macro']:.4f}")
     print(f"F1 Score (Weighted): {test_metrics['f1_weighted']:.4f}")
 
