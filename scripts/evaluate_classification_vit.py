@@ -106,16 +106,12 @@ def main():
 
     # --- Build Model ---
     logging.info(f"Building model architecture ({cfg['arch']})...")
-    backbone = vit_small(
-        patch_size=cfg['patch_size'],
-        img_size=[cfg['img_size']],
-        num_heads=cfg['num_heads'] # Crucial parameter from config
-    )
+    backbone = vit_small()
     # Instantiate the full model
     model = FinetuneViT(
         backbone,
         num_classes=cfg['num_classes'],
-        freeze_backbone='False' # Must match the state saved in the checkpoint (usually False for best model)
+        freeze_backbone='False'
     )
     model.to(device)
 
