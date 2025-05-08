@@ -17,7 +17,7 @@ from src.utils.helper import set_seed
 from src.data.datasets import Classification_dataset, collate_fn
 from src.data.transforms import get_val_transform 
 from src.models.vit import vit_small 
-from src.models.classification_head import FinetuneViT
+from src.models.vit_cls_head import FinetuneViT
 from src.classification.train_eval import val_step
 from src.utils.logging import setup_logging
 import logging
