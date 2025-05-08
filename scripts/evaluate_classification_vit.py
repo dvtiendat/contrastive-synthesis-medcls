@@ -140,11 +140,33 @@ def main():
     # --- Report Results ---
     logging.info("\n--- Test Set Results ---")
     print(f"Accuracy: {test_metrics['accuracy']:.4f}%")
-    print(f"Recall: {test_metrics['recall_per_class']:.4f}")
-    print(f"Precision: {test_metrics['precision_per_class']:.4f}")
-    print(f"Precision: {test_metrics['per_class_acc']:.4f}")
     print(f"F1 Score (Macro): {test_metrics['f1_macro']:.4f}")
     print(f"F1 Score (Weighted): {test_metrics['f1_weighted']:.4f}")
+
+    print("\n--- Per-Class Metrics ---")
+    num_classes = cfg['num_classes']
+    classes = ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal'] # Get this consistently
+
+    print("Precision:")
+    for i in range(num_classes):
+        print(f"  Class {i} ({classes[i]}): {test_metrics['precision_per_class'][i]:.4f}")
+
+    print("Recall:")
+    for i in range(num_classes):
+        print(f"  Class {i} ({classes[i]}): {test_metrics['recall_per_class'][i]:.4f}")
+
+    print("F1 Score:")
+    for i in range(num_classes):
+        print(f"  Class {i} ({classes[i]}): {test_metrics['f1_per_class'][i]:.4f}")
+
+    print("Accuracy:")
+    for i in range(num_classes):
+        acc_val = test_metrics['per_class_acc'].get(i, 'N/A')
+        if isinstance(acc_val, float):
+            print(f"  Class {i} ({classes[i]}): {acc_val:.2f}%")
+        else:
+            print(f"  Class {i} ({classes[i]}): {acc_val}")
+    print("--------------------------")
 
     # Detailed report using classification_report
     print("\nClassification Result:")
