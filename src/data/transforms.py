@@ -1,11 +1,10 @@
 import random
 from PIL import Image, ImageFilter, ImageOps
 import torchvision.transforms as transforms
-import torch
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 
-class GaussianBlur(object):
+class GaussianBlur:
     """Apply Gaussian Blur to the PIL image."""
     def __init__(self, p=0.5, radius_min=0.1, radius_max=2.):
         self.prob = p
@@ -16,13 +15,9 @@ class GaussianBlur(object):
         do_it = random.random() <= self.prob
         if not do_it:
             return img
-        return img.filter(
-            ImageFilter.GaussianBlur(
-                radius=random.uniform(self.radius_min, self.radius_max)
-            )
-        )
+        return img.filter(ImageFilter.GaussianBlur(radius=random.uniform(self.radius_min, self.radius_max)))
 
-class Solarization(object):
+class Solarization:
     """Apply Solarization to the PIL image."""
     def __init__(self, p):
         self.p = p
@@ -33,10 +28,9 @@ class Solarization(object):
         else:
             return img
 
-class DataAugmentationDINO(object):
-    def __init__(self, global_crops_scale, local_crops_scale, local_crops_number,
-                 global_size=224, local_size=96):
-
+class DataAugmentationDINO:
+    """Data augmentation pipeline for DINO."""
+    def __init__(self, global_crops_scale, local_crops_scale, local_crops_number, image_size=224, local_image_size=96):
         flip_and_color_jitter = transforms.Compose([
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomApply(
@@ -52,7 +46,7 @@ class DataAugmentationDINO(object):
 
         # First global crop
         self.global_transfo1 = transforms.Compose([
-            transforms.RandomResizedCrop(global_size, scale=global_crops_scale, interpolation=Image.BICUBIC),
+            transforms.RandomResizedCrop(image_size, scale=global_crops_scale, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(1.0),
             normalize,
@@ -60,7 +54,7 @@ class DataAugmentationDINO(object):
 
         # Second global crop
         self.global_transfo2 = transforms.Compose([
-            transforms.RandomResizedCrop(global_size, scale=global_crops_scale, interpolation=Image.BICUBIC),
+            transforms.RandomResizedCrop(image_size, scale=global_crops_scale, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(0.1),
             Solarization(0.2),
@@ -70,7 +64,7 @@ class DataAugmentationDINO(object):
         # Transformation for the local small crops
         self.local_crops_number = local_crops_number
         self.local_transfo = transforms.Compose([
-            transforms.RandomResizedCrop(local_size, scale=local_crops_scale, interpolation=Image.BICUBIC),
+            transforms.RandomResizedCrop(local_image_size, scale=local_crops_scale, interpolation=Image.BICUBIC),
             flip_and_color_jitter,
             GaussianBlur(p=0.5),
             normalize,
@@ -84,22 +78,21 @@ class DataAugmentationDINO(object):
             crops.append(self.local_transfo(image))
         return crops
 
-
-def get_classification_transforms(img_size=224):
-    train_transform = A.Compose([
-        A.Resize(height=img_size, width=img_size),
-        A.LongestMaxSize(max_size=img_size), 
+# Albumentations transforms for classification finetuning
+def get_train_transform(img_size=224):
+    return A.Compose([
+        A.Resize(height=img_size, width=img_size), # Ensure fixed size
+        A.RandomRotate90(p=0.3),
+        A.HorizontalFlip(p=0.3),
         A.GaussianBlur(blur_limit=(3, 3), p=0.2),
         A.CLAHE(clip_limit=3.0, tile_grid_size=(8, 8), p=0.3),
-        A.HorizontalFlip(p=0.5),
-        A.Rotate(limit=15, p=0.3),
         A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ToTensorV2(),
     ])
-    val_transform = A.Compose([
-        A.Resize(height=img_size, width=img_size), 
-        A.LongestMaxSize(max_size=img_size),
+
+def get_val_transform(img_size=224):
+    return A.Compose([
+        A.Resize(height=img_size, width=img_size), # Ensure fixed size
         A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ToTensorV2(),
     ])
-    return train_transform, val_transform

@@ -1,0 +1,1 @@
+python scripts/run_classification.py --config configs/classification/finetune_vit_dino_config.yaml
