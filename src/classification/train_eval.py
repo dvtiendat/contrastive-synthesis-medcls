@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, confusion_matrix
 import wandb # Import W&B
 
 def train_step(model, dataloader, loss_fn, optimizer, device, num_classes, cfg):
