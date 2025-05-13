@@ -28,7 +28,6 @@ from src.classification.train_eval import train_step, val_step
 from src.utils.helper import save_checkpoint, load_checkpoint, load_dino_checkpoint_for_finetune, save_stats
 from src.utils.logging import setup_logging
 import logging
-import timm
 
 def parse_args():
     parser = argparse.ArgumentParser(description='ViT Finetuning Script')
@@ -40,9 +39,7 @@ def parse_args():
     parser.add_argument('--learning_rate', type=float, default=None, help='Override learning rate')
     parser.add_argument('--epochs', type=int, default=None, help='Override number of epochs')
     parser.add_argument('--freeze_backbone', type=str, choices=['True', 'False'], default=None, help='Override whether to freeze backbone')
-    parser.add_argument('--pretrain_source', type=str, default='dino',
-                        choices=['random', 'imagenet', 'dino'],
-                        help="Source of pretraining weights: 'random', 'imagenet', or 'dino'. Default: 'dino'")
+    
     return parser.parse_args()
 
 def plot_confusion_matrix(cm, classes, filename):
@@ -79,11 +76,10 @@ def main():
         cfg['epochs'] = args.epochs
     if args.freeze_backbone is not None:
         cfg['freeze_backbone'] = args.freeze_backbone
-    if args.pretrain_source is not None: 
-        cfg['pretrain_source'] = args.pretrain_source
     
     print("--- Configuration ---")
     print(yaml.dump(cfg, indent=4))
+    # print(cfg['freeze_backbone'])
     print("---------------------")
 
     # --- Setup ---
@@ -146,66 +142,22 @@ def main():
     backbone = vit_small(patch_size=cfg['patch_size'], img_size=[cfg['img_size']]) 
 
     # Load pretrained DINO weights into the backbone
-    if cfg['pretrain_source'] == 'imagenet':
-        logging.info(f"Loading ViT backbone ({cfg['arch']}) pretrained on ImageNet...")
+    if cfg.get('pretrained_checkpoint_path'):
         try:
-            backbone = timm.create_model(
-                cfg['arch'],
-                pretrained=True,
-                num_classes=0, 
-                img_size=cfg['img_size'] 
-            )
-            if not hasattr(backbone, 'embed_dim') and hasattr(backbone, 'num_features'):
-                backbone.embed_dim = backbone.num_features 
-            elif not hasattr(backbone, 'embed_dim'):
-                 raise AttributeError(f"Timm model {cfg['arch']} does not have 'embed_dim' or 'num_features'. Check model structure.")
-
-            logging.info(f"ImageNet pretrained backbone '{cfg['arch']}' loaded successfully.")
+             backbone = load_dino_checkpoint_for_finetune(cfg['pretrained_checkpoint_path'], backbone, device=device)
+             logging.info("Loaded DINO pretrained weights into backbone.")
         except Exception as e:
-            logging.error(f"Failed to load ImageNet pretrained model {cfg['arch']}: {e}. Exiting.")
-            return
-    elif cfg['pretrain_source'] == 'dino':
-        logging.info("Loading ViT backbone and DINO pretrained weights...")
-        backbone = vit_small( # Or a function to select based on cfg['arch']
-            patch_size=cfg['patch_size'],
-            img_size=[cfg['img_size']],
-            embed_dim=cfg['embed_dim'],
-            num_heads=cfg['num_heads'],
-            mlp_ratio=cfg.get('mlp_ratio', 4.0),
-            qkv_bias=cfg.get('qkv_bias', True),
-            drop_path_rate=cfg.get('drop_path_rate', 0.1)
-        )
-        if cfg.get('pretrained_checkpoint_path'):
-            try:
-                backbone = load_dino_checkpoint_for_finetune(
-                    cfg['pretrained_checkpoint_path'], backbone, device=device
-                )
-                logging.info("Loaded DINO pretrained weights into backbone.")
-            except Exception as e:
-                logging.error(f"Failed to load DINO checkpoint: {e}. Using randomly initialized backbone instead.")
-                backbone = vit_small(patch_size=cfg['patch_size'], img_size=[cfg['img_size']], embed_dim=cfg['embed_dim'], num_heads=cfg['num_heads'])
-        else:
-            logging.warning("Pretrain source is 'dino' but no checkpoint_path specified. Using randomly initialized backbone.")
-            backbone = vit_small(patch_size=cfg['patch_size'], img_size=[cfg['img_size']], embed_dim=cfg['embed_dim'], num_heads=cfg['num_heads'])
-    elif cfg['pretrain_source'] == 'random':
-        logging.info("Initializing ViT backbone with random weights...")
-        backbone = vit_small(
-            patch_size=cfg['patch_size'],
-            img_size=[cfg['img_size']],
-            embed_dim=cfg['embed_dim'],
-            num_heads=cfg['num_heads'],
-            mlp_ratio=cfg.get('mlp_ratio', 4.0),
-            qkv_bias=cfg.get('qkv_bias', True),
-            drop_path_rate=cfg.get('drop_path_rate', 0.1)
-        )
+             logging.error(f"Failed to load DINO checkpoint: {e}.")
+             # Optionally load ImageNet weights here if DINO fails and specified
+             backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
     else:
-        logging.error(f"Invalid pretrain_source: {cfg['pretrain_source']}. Choose from 'random', 'imagenet', 'dino'.")
-        return
+        logging.warning("No pretrained_checkpoint_path specified.")
+        # Or load ImageNet weights by default if desired
+        backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
 
 
     model = FinetuneViT(backbone, num_classes=cfg['num_classes'], freeze_backbone=cfg['freeze_backbone'])
     model.to(device)
-
     print(f"Model architecture: {model}")
     if cfg.get('use_wandb', True):
         wandb.watch(model, log_freq=100)
