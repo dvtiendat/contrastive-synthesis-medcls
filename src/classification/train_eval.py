@@ -45,6 +45,10 @@ def train_step(model, dataloader, loss_fn, optimizer, device, num_classes, cfg):
 
     f1_macro = f1_score(all_labels, all_preds, average='macro', zero_division=0)
     f1_weighted = f1_score(all_labels, all_preds, average='weighted', zero_division=0)
+    precision_macro = precision_score(all_labels, all_preds, average='macro', zero_division=0)
+    precision_weighted = precision_score(all_labels, all_preds, average='weighted', zero_division=0)
+    recall_macro = recall_score(all_labels, all_preds, average='macro', zero_division=0)
+    recall_weighted = recall_score(all_labels, all_preds, average='weighted', zero_division=0)
     f1_per_class = f1_score(all_labels, all_preds, average=None, zero_division=0)
     precision_per_class = precision_score(all_labels, all_preds, average=None, zero_division=0)
     recall_per_class = recall_score(all_labels, all_preds, average=None, zero_division=0)
@@ -63,6 +67,10 @@ def train_step(model, dataloader, loss_fn, optimizer, device, num_classes, cfg):
         'accuracy': accuracy,
         'f1_macro': f1_macro,
         'f1_weighted': f1_weighted,
+        'precision_macro': precision_macro,
+        'precision_weighted': precision_weighted,
+        'recall_macro': recall_macro,
+        'recall_weighted': recall_weighted,
         'per_class_acc': per_class_acc,
         'f1_per_class': f1_per_class,
         'precision_per_class': precision_per_class,
@@ -75,9 +83,12 @@ def train_step(model, dataloader, loss_fn, optimizer, device, num_classes, cfg):
             "train_loss": metrics['loss'],
             "train_accuracy": metrics['accuracy'],
             "train_f1_macro": metrics['f1_macro'],
-            "train_f1_weighted": metrics['f1_weighted']
-            # Add per-class metrics if desired, prefixing with 'train_'
-        }, commit=False) # Commit=False because val_step will commit
+            "train_f1_weighted": metrics['f1_weighted'],
+            "train_precision_macro": metrics['precision_macro'],
+            "train_precision_weighted": metrics['precision_weighted'],
+            "train_recall_macro": metrics['recall_macro'],
+            "train_recall_weighted": metrics['recall_weighted']
+        }, commit=False) 
 
     return metrics
 
@@ -118,6 +129,10 @@ def val_step(model, dataloader, loss_fn, device, num_classes, cfg):
     # Calculate metrics
     f1_macro = f1_score(all_labels, all_preds, average='macro', zero_division=0)
     f1_weighted = f1_score(all_labels, all_preds, average='weighted', zero_division=0)
+    precision_macro = precision_score(all_labels, all_preds, average='macro', zero_division=0)
+    precision_weighted = precision_score(all_labels, all_preds, average='weighted', zero_division=0)
+    recall_macro = recall_score(all_labels, all_preds, average='macro', zero_division=0)
+    recall_weighted = recall_score(all_labels, all_preds, average='weighted', zero_division=0)
     f1_per_class = f1_score(all_labels, all_preds, average=None, zero_division=0)
     precision_per_class = precision_score(all_labels, all_preds, average=None, zero_division=0)
     recall_per_class = recall_score(all_labels, all_preds, average=None, zero_division=0)
@@ -138,6 +153,10 @@ def val_step(model, dataloader, loss_fn, device, num_classes, cfg):
         'accuracy': accuracy,
         'f1_macro': f1_macro,
         'f1_weighted': f1_weighted,
+        'precision_macro': precision_macro,
+        'precision_weighted': precision_weighted,
+        'recall_macro': recall_macro,
+        'recall_weighted': recall_weighted,
         'per_class_acc': per_class_acc,
         'f1_per_class': f1_per_class,
         'precision_per_class': precision_per_class,
@@ -154,12 +173,16 @@ def val_step(model, dataloader, loss_fn, device, num_classes, cfg):
             "val_accuracy": metrics['accuracy'],
             "val_f1_macro": metrics['f1_macro'],
             "val_f1_weighted": metrics['f1_weighted'],
+            "val_precision_macro": metrics['precision_macro'],
+            "val_precision_weighted": metrics['precision_weighted'],
+            "val_recall_macro": metrics['recall_macro'],
+            "val_recall_weighted": metrics['recall_weighted'],
             "epoch": cfg['current_epoch'] # Add epoch for proper step tracking
             # Add per-class metrics if desired, prefixing with 'val_'
         }
-        # Log confusion matrix (optional, requires wandb.plot)
-        # class_names = dataloader.dataset.dataset.classes # Get class names carefully
-        # wandb.log({"conf_mat": wandb.plot.confusion_matrix(preds=all_preds, y_true=all_labels, class_names=class_names)})
-        wandb.log(log_data, commit=True) # Commit True after logging both train and val metrics
+        
+        class_names = dataloader.dataset.dataset.classes # Get class names carefully
+        wandb.log({"conf_mat": wandb.plot.confusion_matrix(preds=all_preds, y_true=all_labels, class_names=class_names)})
+        wandb.log(log_data, commit=True) 
 
     return metrics
