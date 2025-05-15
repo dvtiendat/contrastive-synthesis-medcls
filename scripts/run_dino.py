@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.optim
 import torch.utils.data
 import wandb 
+import timm
 from pathlib import Path
 from functools import partial
 
@@ -30,6 +31,8 @@ import logging
 def parse_args():
     parser = argparse.ArgumentParser(description='DINO Pretraining Script')
     parser.add_argument('--config', type=str, required=True, help='Path to the config YAML file')
+    parser.add_argument('--init_with_imagenet', type=lambda x: (str(x).lower() == 'true'), default=None,
+                        help='Override init_with_imagenet (True/False)')
     parser.add_argument('--data_path', default=None, type=str, help='Override data path')
     parser.add_argument('--output_dir', default=None, type=str, help='Override output directory')
     parser.add_argument('--epochs', type=int, default=None, help='Override number of epochs')
@@ -54,6 +57,8 @@ def main():
         cfg['batch_size'] = args.batch_size
     if args.learning_rate is not None:
         cfg['learning_rate'] = args.learning_rate
+    if args.init_with_imagenet is not None: 
+        cfg['init_with_imagenet'] = args.init_with_imagenet
     
     print("--- Configuration ---")
     print(yaml.dump(cfg, indent=4))
@@ -105,9 +110,18 @@ def main():
 
     # --- Building student and teacher networks ---
     logging.info(f"Building student and teacher networks ({cfg['arch']})...")
+
+    if cfg.get('init_with_imagenet', False):
+        logging.info("Initializing with teacher and student backbones with ImageNet weights.")
+        student_backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0, drop_path_rate=cfg.get('drop_path_rate', 0.1))
+        student_backbone.embed_dim = student_backbone.num_features
+        teacher_backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0, drop_path_rate=0.0)
+        teacher_backbone.embed_dim = teacher_backbone.num_features
+    else:
+        logging.info("Initializing student and teacher backbones from scratch.")
     # Use partial for norm_layer if needed
-    student_backbone = vit_small(patch_size=cfg['patch_size'], drop_path_rate=cfg.get('drop_path_rate', 0.1))
-    teacher_backbone = vit_small(patch_size=cfg['patch_size']) # No drop path for teacher
+        student_backbone = vit_small(patch_size=cfg['patch_size'], drop_path_rate=cfg.get('drop_path_rate', 0.1))
+        teacher_backbone = vit_small(patch_size=cfg['patch_size'], drop_path_rate=0.0) 
 
     embed_dim = student_backbone.embed_dim
 
