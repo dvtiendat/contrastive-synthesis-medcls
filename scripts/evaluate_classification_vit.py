@@ -61,6 +61,7 @@ def main():
     # --- Apply Overrides ---
     if args.data_path is not None: cfg['data_path'] = args.data_path
     if args.batch_size is not None: cfg['batch_size'] = args.batch_size
+    if args.checkpoint_path is not None: cfg['checkpoint_path'] = args.checkpoint_path
     if args.output_dir is not None:
         output_dir = Path(args.output_dir)
     else:
@@ -82,7 +83,7 @@ def main():
     val_transform = get_val_transform(cfg['img_size'])
     classes = ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal'] # Ensure this matches training
 
-    dataset_full_for_split = Classification_dataset(cfg['data_path'], transform=None, classes=classes) # Transform=None is fine for just getting indices
+    dataset_full_for_split = Classification_dataset(cfg['data_path'], transform=None, classes=classes)
     all_indices = list(range(len(dataset_full_for_split)))
 
     random.seed(cfg.get('seed', 42))
@@ -96,7 +97,7 @@ def main():
         test_indices
     )
 
-    test_loader = DataLoader(test_dataset, batch_size=cfg.get('batch_size', 32), shuffle=False, # No shuffle for test
+    test_loader = DataLoader(test_dataset, batch_size=cfg.get('batch_size', 32), shuffle=False,
                              num_workers=cfg.get('num_workers', 4), pin_memory=True, collate_fn=collate_fn)
 
     logging.info(f"Test set size: {len(test_dataset)}")
@@ -142,6 +143,10 @@ def main():
     print(f"Accuracy: {test_metrics['accuracy']:.4f}%")
     print(f"F1 Score (Macro): {test_metrics['f1_macro']:.4f}")
     print(f"F1 Score (Weighted): {test_metrics['f1_weighted']:.4f}")
+    print(f"Precision (Macro): {test_metrics['precision_macro']:.4f}")
+    print(f"Precision (Weighted): {test_metrics['precision_weighted']:.4f}")
+    print(f"Recall (Macro): {test_metrics['recall_macro']:.4f}")
+    print(f"Recall (Weighted): {test_metrics['recall_weighted']:.4f}")
 
     print("\n--- Per-Class Metrics ---")
     num_classes = cfg['num_classes']
