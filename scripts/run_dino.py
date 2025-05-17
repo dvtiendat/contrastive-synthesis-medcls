@@ -113,10 +113,42 @@ def main():
 
     if cfg.get('init_with_imagenet', False):
         logging.info("Initializing with teacher and student backbones with ImageNet weights.")
-        student_backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0, drop_path_rate=cfg.get('drop_path_rate', 0.1))
-        student_backbone.embed_dim = student_backbone.num_features
-        teacher_backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0, drop_path_rate=0.0)
-        teacher_backbone.embed_dim = teacher_backbone.num_features
+        student_backbone_custom = vit_small(
+            patch_size=cfg['patch_size'],
+            embed_dim=cfg.get('embed_dim', 384),
+            depth=cfg.get('depth', 12),
+            num_heads=cfg.get('num_heads', 6),
+            drop_path_rate=cfg.get('drop_path_rate', 0.1),
+            img_size=[224]
+        )
+        teacher_backbone_custom = vit_small(
+            patch_size=cfg['patch_size'],
+            embed_dim=cfg.get('embed_dim', 384),
+            depth=cfg.get('depth', 12),
+            num_heads=cfg.get('num_heads', 6),
+            img_size=[224]
+        )
+        timm_model_name = cfg['arch']
+        timm_model_for_weights = timm.create_model(timm_model_name, pretrained=True, num_classes=0)
+        timm_state_dict = timm_model_for_weights.state_dict()
+        msg_student = student_backbone_custom.load_state_dict(timm_state_dict, strict=False)
+        logging.info(f"Loaded ImageNet weights into custom student backbone. Message: {msg_student}")
+        if msg_student.missing_keys or msg_student.unexpected_keys:
+            logging.warning("Potential mismatches when loading student weights. Review keys.")
+            logging.warning(f"Missing: {msg_student.missing_keys}")
+            logging.warning(f"Unexpected: {msg_student.unexpected_keys}")
+
+        msg_teacher = teacher_backbone_custom.load_state_dict(timm_state_dict, strict=False)
+        logging.info(f"Loaded ImageNet weights into custom teacher backbone. Message: {msg_teacher}")
+        if msg_teacher.missing_keys or msg_teacher.unexpected_keys:
+            logging.warning("Potential mismatches when loading teacher weights. Review keys.")
+            logging.warning(f"Missing: {msg_teacher.missing_keys}")
+            logging.warning(f"Unexpected: {msg_teacher.unexpected_keys}")
+
+
+        student_backbone = student_backbone_custom
+        teacher_backbone = teacher_backbone_custom
+
     else:
         logging.info("Initializing student and teacher backbones from scratch.")
     # Use partial for norm_layer if needed
