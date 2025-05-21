@@ -23,12 +23,23 @@ from src.utils.logging import setup_logging
 import logging
 
 def plot_confusion_matrix(cm, classes, filename):
-    """Plots and saves the confusion matrix."""
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=classes, yticklabels=classes)
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    plt.title('Test Set Confusion Matrix')
+    """Plots and saves the confusion matrix with enhanced size and font settings."""
+    plt.figure(figsize=(10, 7))
+    sns.heatmap(cm,
+                annot=True,
+                fmt='d',
+                cmap='Blues',
+                xticklabels=classes,
+                yticklabels=classes,
+                annot_kws={"size": 16}) 
+
+    plt.xlabel('Predicted Label', fontsize=14)
+    plt.ylabel('True Label', fontsize=14)
+    plt.title('Confusion Matrix', fontsize=16)
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.tight_layout()
     plt.savefig(filename)
     plt.close()
     logging.info(f"Confusion matrix saved to {filename}")
