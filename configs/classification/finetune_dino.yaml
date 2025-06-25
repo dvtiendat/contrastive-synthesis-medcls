@@ -1,0 +1,29 @@
+data_path: "" 
+output_dir: ""          
+num_workers: 4
+img_size: 224
+num_classes: 4
+train_split: 0.8
+val_split: 0.1 
+
+# Model Parameters
+arch: 'vit_small'
+patch_size: 16
+embed_dim: 384 
+num_heads: 6   
+pretrained_checkpoint_path: "ckpts/best_model.pth" # Path to our DINO checkpoint
+freeze_backbone: 'False' # Set to True for linear probing initially, False for full finetuning
+
+# Training Hyperparameters
+epochs: 50
+batch_size: 32
+learning_rate: 0.0001
+weight_decay: 0.01
+use_fp16: True 
+
+seed: 42
+early_stop_patience: 10 
+
+wandb_project: "lung_radiology_classification"
+wandb_entity: "dvtiendat"
+wandb_run_name: "finetune_vit_dino"
