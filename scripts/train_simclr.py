@@ -1,5 +1,3 @@
-# run_simclr.py
-
 import yaml
 from src.contrastive.simclr_train import train_simclr
 

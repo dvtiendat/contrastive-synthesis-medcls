@@ -5,7 +5,7 @@ from src.models.resnet import get_resnet_backbone
 from models.simclr import SimCLR
 from src.data.transforms import get_simclr_augmentation
 from src.utils.helper import set_seed, save_checkpoint
-from utils.nt_xent import NTXentLoss  # nếu bạn đã tự cài loss này
+from utils.nt_xent import NTXentLoss 
 import os
 
 def train_simclr(config):

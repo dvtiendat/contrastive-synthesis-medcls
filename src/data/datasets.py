@@ -33,21 +33,18 @@ class UnlabeledDataset(Dataset):
             image = Image.open(img_path).convert('RGB')
         except Exception as e:
             print(f"Warning: Could not load image {img_path}. Error: {e}")
-            return None, 0 # Important: return None for both image and dummy label
+            return None, 0 
 
         if self.transform:
             try:
                 crops = self.transform(image)
-                # Ensure transform returns a list of tensors
                 if not isinstance(crops, list) or not all(isinstance(c, torch.Tensor) for c in crops):
                      raise ValueError("Transform did not return a list of tensors")
-                return crops, 0 # Return dummy label 0 for unlabeled data
+                return crops, 0
             except Exception as e:
                 print(f"Warning: Failed to transform image {img_path}. Error: {e}")
                 return None, 0
         else:
-             # Handle case where no transform is provided if necessary
-             # Maybe convert PIL image to tensor?
              return image, 0 # Return PIL image and dummy label
 
 

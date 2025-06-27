@@ -19,20 +19,17 @@ class NTXentLoss(nn.Module):
         zis = F.normalize(zis, dim=1)
         zjs = F.normalize(zjs, dim=1)
 
-        # Hợp nhất lại
-        representations = torch.cat([zis, zjs], dim=0)  # (2N, D)
+        representations = torch.cat([zis, zjs], dim=0) 
         similarity_matrix = F.cosine_similarity(
             representations.unsqueeze(1), representations.unsqueeze(0), dim=2
         )  # (2N, 2N)
 
-        # Tạo mask loại bỏ chính nó (i == j)
         self_mask = torch.eye(2 * batch_size, dtype=torch.bool).to(self.device)
         positives_mask = torch.zeros_like(self_mask)
         for i in range(batch_size):
             positives_mask[i, i + batch_size] = 1
             positives_mask[i + batch_size, i] = 1
 
-        # Positive similarities
         positives = similarity_matrix[positives_mask.bool()].view(2 * batch_size, 1)
         negatives = similarity_matrix[~(self_mask | positives_mask)].view(2 * batch_size, -1)
 

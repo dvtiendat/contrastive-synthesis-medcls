@@ -51,14 +51,12 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # --- Load Configuration ---
     with open(args.config, 'r') as f:
         cfg = yaml.safe_load(f)
     print("--- Using Configuration from Training ---")
     print(yaml.dump(cfg, indent=4))
     print("----------------------------------------")
 
-    # --- Apply Overrides ---
     if args.data_path is not None: cfg['data_path'] = args.data_path
     if args.batch_size is not None: cfg['batch_size'] = args.batch_size
     if args.output_dir is not None:
@@ -67,7 +65,6 @@ def main():
         output_dir = Path(args.checkpoint_path).parent
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- Setup ---
     set_seed(cfg.get('seed', 42))
     device = torch.device(args.device if args.device else ("cuda" if torch.cuda.is_available() else "cpu"))
     log_file = output_dir / 'evaluate_log.txt'
@@ -77,12 +74,11 @@ def main():
 
     cfg['use_wandb'] = False
 
-    # --- Prepare Test Data ---
     logging.info("Preparing test dataset...")
     val_transform = get_val_transform(cfg['img_size'])
-    classes = ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal'] # Ensure this matches training
+    classes = ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal'] 
 
-    dataset_full_for_split = Classification_dataset(cfg['data_path'], transform=None, classes=classes) # Transform=None is fine for just getting indices
+    dataset_full_for_split = Classification_dataset(cfg['data_path'], transform=None, classes=classes)
     all_indices = list(range(len(dataset_full_for_split)))
 
     random.seed(cfg.get('seed', 42))
@@ -137,7 +133,6 @@ def main():
 
     test_metrics = val_step(model, test_loader, criterion, device, cfg['num_classes'], cfg)
 
-    # --- Report Results ---
     logging.info("\n--- Test Set Results ---")
     print(f"Accuracy: {test_metrics['accuracy']:.4f}%")
     print(f"F1 Score (Macro): {test_metrics['f1_macro']:.4f}")
@@ -145,8 +140,7 @@ def main():
 
     print("\n--- Per-Class Metrics ---")
     num_classes = cfg['num_classes']
-    classes = ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal'] # Get this consistently
-
+    classes = ['COVID', 'Lung_Opacity', 'Viral_Pneumonia', 'Normal'] 
     print("Precision:")
     for i in range(num_classes):
         print(f"  Class {i} ({classes[i]}): {test_metrics['precision_per_class'][i]:.4f}")

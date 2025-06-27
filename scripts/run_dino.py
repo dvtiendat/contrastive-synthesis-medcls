@@ -105,9 +105,8 @@ def main():
 
     # --- Building student and teacher networks ---
     logging.info(f"Building student and teacher networks ({cfg['arch']})...")
-    # Use partial for norm_layer if needed
     student_backbone = vit_small(patch_size=cfg['patch_size'], drop_path_rate=cfg.get('drop_path_rate', 0.1))
-    teacher_backbone = vit_small(patch_size=cfg['patch_size']) # No drop path for teacher
+    teacher_backbone = vit_small(patch_size=cfg['patch_size']) 
 
     embed_dim = student_backbone.embed_dim
 
@@ -122,13 +121,11 @@ def main():
     student.to(device)
     teacher.to(device)
 
-    # Initialize teacher with student weights and freeze teacher
     teacher.load_state_dict(student.state_dict())
     for p in teacher.parameters():
         p.requires_grad = False
     logging.info("Student and Teacher models built. Teacher parameters frozen.")
 
-    # --- DINO Loss ---
     dino_loss = DINOLoss(
         cfg['out_dim'],
         cfg['local_crops_number'] + 2, # total number of crops = local_crops + 2 global
@@ -152,20 +149,17 @@ def main():
         else:
              params_groups.append({"params": [p]})
 
-    # Scale learning rate
     base_lr = cfg['learning_rate']
     scaled_lr = base_lr * cfg['batch_size'] / 256.0 # Linear scaling rule
 
     optimizer = torch.optim.AdamW(params_groups, lr=scaled_lr, weight_decay=cfg['weight_decay']) # WD is applied group-wise
     logging.info(f"Optimizer AdamW created. Scaled LR: {scaled_lr:.6f}")
 
-    # --- FP16 Scaler ---
     fp16_scaler = None
     if cfg['use_fp16']:
         fp16_scaler = torch.cuda.amp.GradScaler()
         logging.info("Using FP16 training.")
 
-    # --- Schedulers ---
     lr_schedule = cosine_scheduler(
         scaled_lr, cfg['min_lr'], cfg['epochs'], niter_per_ep, warmup_epochs=cfg['warmup_epochs']
     )
@@ -179,20 +173,18 @@ def main():
 
     start_epoch = 0
 
-    # --- Training Loop ---
     logging.info("Starting DINO pretraining!")
     start_time = time.time()
     best_loss = float('inf')
 
     for epoch in range(start_epoch, cfg['epochs']):
-        cfg['current_epoch'] = epoch # Add epoch to config for logging inside train_step
+        cfg['current_epoch'] = epoch 
 
         train_stats = train_dino_epoch(
             student, teacher, dino_loss, data_loader, optimizer,
             lr_schedule, wd_schedule, momentum_schedule, epoch, cfg['epochs'], fp16_scaler, cfg
         )
 
-        # --- Save Checkpoint ---
         is_best = train_stats['loss'] < best_loss
         best_loss = min(train_stats['loss'], best_loss)
 

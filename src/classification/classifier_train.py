@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from utils.helper import set_seed
-from models.classifier import LinearClassifier  # bạn sẽ cần file này
+from models.classifier import LinearClassifier 
 from models.resnet import get_resnet_backbone
 
 def train_classifier(config, checkpoint_path):

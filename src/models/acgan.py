@@ -128,7 +128,7 @@ def gray_to_rgb_ndarray(img: np.ndarray) -> np.ndarray:
     elif len(img.shape) == 3 and img.shape[2] == 1:  # (H, W, 1)
         return np.repeat(img, 3, axis=2)  # (H, W, 3)
     else:
-        return img  # Already 3 channels
+        return img 
 
 def get_model(configs):
     LATENT_DIM = configs.get('LATENT_DIM', 128) 

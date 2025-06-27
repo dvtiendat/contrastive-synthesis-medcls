@@ -30,21 +30,18 @@ class DINOLoss(nn.Module):
         Cross-entropy between softmax outputs of the teacher and student networks.
         """
         student_out = student_output / self.student_temp
-        student_out = student_out.chunk(self.ncrops) # Split into chunks for each crop
+        student_out = student_out.chunk(self.ncrops) 
 
-        # Teacher sharpening and centering
-        # Use scheduled temperature
         temp = self.teacher_temp_schedule[epoch]
         teacher_out = F.softmax((teacher_output - self.center) / temp, dim=-1)
         # Detach teacher output so gradients don't flow back
-        teacher_out = teacher_out.detach().chunk(2) # Only global crops for teacher
+        teacher_out = teacher_out.detach().chunk(2) 
 
         total_loss = 0
         n_loss_terms = 0
-        for iq, q in enumerate(teacher_out): # Iterate through teacher's global crops
-            for v in range(len(student_out)): # Iterate through all student crops
+        for iq, q in enumerate(teacher_out): 
+            for v in range(len(student_out)): 
                 if v == iq:
-                    # Don't compare student's global crop to the same teacher global crop
                     continue
                 loss = torch.sum(-q * F.log_softmax(student_out[v], dim=-1), dim=-1)
                 total_loss += loss.mean()

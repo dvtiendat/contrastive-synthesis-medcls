@@ -57,11 +57,9 @@ def plot_confusion_matrix(cm, classes, filename):
 def main():
     args = parse_args()
     # print(args.freeze_backbone)
-    # --- Load Configuration ---
     with open(args.config, 'r') as f:
         cfg = yaml.safe_load(f)
     
-    # Override config values with command line arguments if provided
     if args.data_path is not None:
         cfg['data_path'] = args.data_path
     if args.output_dir is not None:
@@ -82,7 +80,6 @@ def main():
     # print(cfg['freeze_backbone'])
     print("---------------------")
 
-    # --- Setup ---
     set_seed(cfg['seed'])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     output_dir = Path(cfg['output_dir'])
@@ -105,7 +102,6 @@ def main():
     else:
          print("W&B logging disabled by config.")
 
-    # --- Prepare Data ---
     logging.info("Preparing dataset...")
     train_transform = get_train_transform(cfg['img_size'])
     val_transform = get_val_transform(cfg['img_size'])
@@ -135,24 +131,18 @@ def main():
 
     logging.info(f"Data split: Train={len(train_dataset)}, Val={len(val_dataset)}, Test={len(test_indices)}")
 
-
-    # --- Building Model ---
     logging.info(f"Building finetuning model ({cfg['arch']})...")
-    # Instantiate the backbone first
     backbone = vit_small(patch_size=cfg['patch_size'], img_size=[cfg['img_size']]) 
 
-    # Load pretrained DINO weights into the backbone
     if cfg.get('pretrained_checkpoint_path'):
         try:
              backbone = load_dino_checkpoint_for_finetune(cfg['pretrained_checkpoint_path'], backbone, device=device)
              logging.info("Loaded DINO pretrained weights into backbone.")
         except Exception as e:
              logging.error(f"Failed to load DINO checkpoint: {e}.")
-             # Optionally load ImageNet weights here if DINO fails and specified
              backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
     else:
         logging.warning("No pretrained_checkpoint_path specified.")
-        # Or load ImageNet weights by default if desired
         backbone = timm.create_model(cfg['arch'], pretrained=True, num_classes=0)
 
 
@@ -162,7 +152,6 @@ def main():
     if cfg.get('use_wandb', True):
         wandb.watch(model, log_freq=100)
 
-    # --- Loss Function and Optimizer ---
     criterion = nn.CrossEntropyLoss()
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg['learning_rate'], weight_decay=cfg['weight_decay'])
@@ -172,7 +161,6 @@ def main():
     start_epoch = 0
     best_val_loss = float('inf')
 
-    # --- Training Loop ---
     logging.info("Starting finetuning!")
     start_time = time.time()
     stats = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': [], 'f1_macro': [], 'f1_weighted': []}

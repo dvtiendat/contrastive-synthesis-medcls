@@ -31,8 +31,7 @@ class SimCLR(nn.Module):
         encoding = self.encoder(x)
         projection = self.projection(encoding) 
         return projection
-    
-# Định nghĩa mô hình LinearEvaluation
+
 class Identity(nn.Module):
     def forward(self, x):
         return x

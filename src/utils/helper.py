@@ -74,34 +74,29 @@ def load_checkpoint(checkpoint_path, model, optimizer=None, scaler=None, device=
 
 def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='cuda'):
     """Loads DINO teacher weights for the backbone specifically."""
-    abs_path = os.path.abspath(checkpoint_path) # Get absolute path for clarity
+    abs_path = os.path.abspath(checkpoint_path)
     if not os.path.isfile(abs_path):
         raise FileNotFoundError(f"=> No checkpoint found at '{abs_path}'")
 
     print(f"\n--- Loading DINO Checkpoint for Finetune ---")
     print(f"=> Attempting to load checkpoint from: '{abs_path}'")
     try:
-        # Try loading with weights_only=False first, as it worked in notebook
-        # and might be necessary if non-tensor data is pickled
         checkpoint = torch.load(abs_path, map_location=device, weights_only=True)
         print("=> Checkpoint loaded successfully (weights_only=True).")
     except Exception as e_false:
         print(f"=> Loading with weights_only=False failed: {e_false}")
         try:
-            # Fallback to weights_only=True if False failed unexpectedly
             print("=> Attempting to load with weights_only=False...")
             checkpoint = torch.load(abs_path, map_location=device, weights_only=False)
             print("=> Checkpoint loaded successfully (weights_only=True).")
         except Exception as e_true:
             print(f"=> Loading with weights_only=False also failed: {e_true}")
             print("=> ERROR: Could not load the checkpoint file.")
-            raise e_true # Re-raise the error
+            raise e_true
 
-    # --- Check Keys ---
     print(f"=> Checkpoint keys: {list(checkpoint.keys())}")
     if 'teacher' not in checkpoint:
-        # Maybe the key is different? Or student was saved?
-        if 'state_dict' in checkpoint: # Common alternative
+        if 'state_dict' in checkpoint:
              print("WARNING: 'teacher' key not found, trying 'state_dict'.")
              teacher_weights = checkpoint['state_dict']
         elif 'student' in checkpoint:
@@ -113,26 +108,22 @@ def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='c
         teacher_weights = checkpoint['teacher']
         print(f"=> Found 'teacher' state dict with {len(teacher_weights)} keys.")
 
-
-    # --- Key Stripping and Loading ---
     adjusted_weights = {}
     loaded_count = 0
     skipped_count = 0
     print("\n--- Processing Teacher Weights ---")
     for key, value in teacher_weights.items():
         if key.startswith('backbone.'):
-            new_key = key.replace('backbone.', '', 1) # Replace only the first occurrence
+            new_key = key.replace('backbone.', '', 1) 
             adjusted_weights[new_key] = value
             loaded_count += 1
-            # print(f"Mapping: '{key}' -> '{new_key}'") # Uncomment for very detailed debug
         else:
             skipped_count +=1
-            print(f"Skipping non-backbone key: {key}") # Uncomment for very detailed debug
+            print(f"Skipping non-backbone key: {key}") 
 
     if loaded_count == 0:
          print("\nERROR: No weights with 'backbone.' prefix found in the selected state_dict.")
          print("Available keys were:")
-         # Print first 10 keys from the loaded state_dict for inspection
          keys_to_show = list(teacher_weights.keys())[:10]
          for k in keys_to_show: print(f"  - {k}")
          if len(teacher_weights) > 10: print("  ...")
@@ -140,15 +131,13 @@ def load_dino_checkpoint_for_finetune(checkpoint_path, model_backbone, device='c
     else:
         print(f"Processed {loaded_count} backbone weights, skipped {skipped_count} other weights (likely head).")
 
-    # --- Load into Backbone ---
     print("\n--- Loading State Dict into Backbone ---")
-    # Set strict=True first to catch all mismatches. If it fails, try strict=False
-    # but investigate the mismatches printed.
+
     try:
         msg = model_backbone.load_state_dict(adjusted_weights, strict=True)
         print("=> Loaded teacher backbone weights successfully (strict=True).")
-        if msg.missing_keys: print(f"Missing keys in model: {msg.missing_keys}") # Should be empty
-        if msg.unexpected_keys: print(f"Unexpected keys in checkpoint: {msg.unexpected_keys}") # Should be empty
+        if msg.missing_keys: print(f"Missing keys in model: {msg.missing_keys}")
+        if msg.unexpected_keys: print(f"Unexpected keys in checkpoint: {msg.unexpected_keys}") 
     except RuntimeError as e_strict:
         print(f"\nWARNING: Loading with strict=True failed: {e_strict}")
         print("=> Attempting to load with strict=False...")

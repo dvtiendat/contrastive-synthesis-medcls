@@ -91,15 +91,9 @@ class ResNet(nn.Module):
             x = self.fc(x)
         return x
 
-# -------------------------
-# ResNet constructor
-# -------------------------
 def resnet18(include_top=True, num_classes=1000):
     return ResNet(BasicBlock, [2, 2, 2, 2], include_top, num_classes)
 
-# -------------------------
-# Wrapper cho backbone
-# -------------------------
 def get_resnet_backbone(out_dim=128):
     """
     Trả về backbone ResNet18 + projection head.

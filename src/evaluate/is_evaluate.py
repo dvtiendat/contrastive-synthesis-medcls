@@ -37,7 +37,7 @@ def inception_score(gen_img_paths, device = "cpu", batch_size=32, resize=True, s
             self.data = os.listdir(self.gen_img_paths)
         def __getitem__(self, index):
             img_path = os.path.join(self.gen_img_paths, self.data[index])
-            img = Image.open(img_path).convert('RGB')  # mở ảnh và chuyển về 3 kênh RGB
+            img = Image.open(img_path).convert('RGB') 
             return self.transform(img)
 
         def __len__(self):
@@ -47,10 +47,8 @@ def inception_score(gen_img_paths, device = "cpu", batch_size=32, resize=True, s
     assert batch_size > 0
     assert N > batch_size
 
-    # Set up dataloader
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
 
-    # Load inception model
     inception_model = inception_v3(pretrained=True, transform_input=False).to(device)
     inception_model.eval()
     up = nn.Upsample(size=(299, 299), mode='bilinear').to(device)
@@ -60,7 +58,6 @@ def inception_score(gen_img_paths, device = "cpu", batch_size=32, resize=True, s
         x = inception_model(x)
         return F.softmax(x, dim=1).data.cpu().numpy()
 
-    # Get predictions
     preds = np.zeros((N, 1000))
 
     for i, batch in enumerate(dataloader, 0):
@@ -70,7 +67,6 @@ def inception_score(gen_img_paths, device = "cpu", batch_size=32, resize=True, s
         with torch.no_grad():
             preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
 
-    # Now compute the mean kl-div
     split_scores = []
 
     for k in range(splits):

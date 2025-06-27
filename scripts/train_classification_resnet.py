@@ -1,5 +1,3 @@
-# run_classification_resnet.py
-
 import yaml
 from src.classification.classifier_train import train_classifier
 

@@ -8,12 +8,11 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.models.simclr import LinearEvaluation, SimCLR
 
-# Load pretrained model
 def load_model(weights_path):
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f'DEVICE: {DEVICE}')
 
-    simclr_model = SimCLR()  # Khởi tạo mô hình SimCLR phù hợp
+    simclr_model = SimCLR()  
     pretrained_model_path = "D:\THO\Bach_Khoa\Computer Vision\model\Pretrain\simclr_pretrain_ACGAN_Imagenet.pth"
     simclr_model.load_state_dict(torch.load(pretrained_model_path, map_location=DEVICE, weights_only=True))
     simclr_model.eval()
@@ -23,7 +22,6 @@ def load_model(weights_path):
     eval_model.eval()
     return eval_model
 
-# Preprocess input image
 def preprocess_image(image_path):
     preprocess = transforms.Compose([
         transforms.Resize((224, 224)),
@@ -33,7 +31,6 @@ def preprocess_image(image_path):
     image = Image.open(image_path).convert('RGB')
     return preprocess(image).unsqueeze(0)
 
-# Run inference
 def run_inference(model, input_tensor):
     with torch.no_grad():
         outputs = model(input_tensor)

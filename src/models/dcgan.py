@@ -42,12 +42,10 @@ class Generator(nn.Module):
     def forward(self, x):
         batch_size = x.size(0)
         
-        # Process noise
         x = self.fc(x)
         x = self.LeakyReLU(x)
         x = x.view(batch_size, 1024, 16, 16)
         
-        # ConvTranspose2d layers
         x = self.conv_transpose1(x)
         x = self.bn1(x)
         x = self.LeakyReLU(x)
